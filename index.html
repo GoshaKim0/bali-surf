@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Бали серф</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root{--bg:#0f1720;--card:#161f29;--card2:#1b2633;--muted:#8394a6;--text:#e8eef4;--good:#2fbf71;--ok:#e0b43a;--meh:#e07b3a;--bad:#5f6b78;--line:#222e3b;--acc:#3b6a96}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+  .wrap{max-width:860px;margin:0 auto;padding:14px 16px 40px}
+  header{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+  h1{font-size:19px;margin:0}
+  .muted{color:var(--muted)}
+  .sm{font-size:13px}
+  .upd{font-size:12px;color:var(--muted)}
+  .upd button{background:none;border:0;color:#8cc4ff;cursor:pointer;font-size:12px;padding:0 0 0 4px}
+  .tabs{display:flex;gap:6px;overflow-x:auto;padding:12px 0;scrollbar-width:none}
+  .tab{background:transparent;border:1px solid var(--line);color:var(--muted);padding:6px 12px;border-radius:20px;cursor:pointer;white-space:nowrap;font-size:14px}
+  .tab.on{background:#22374d;border-color:var(--acc);color:var(--text)}
+  #map{height:400px;border-radius:14px;border:1px solid var(--line);background:#0b1118;color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:13px}
+  @media (max-width:600px){#map{height:330px}}
+  .top{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0 18px;font-size:13px}
+  .tchip{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:3px 10px 3px 3px;cursor:pointer;color:var(--text)}
+  .pill{display:inline-block;min-width:38px;text-align:center;font-weight:700;border-radius:8px;padding:2px 6px;color:#0b1118;flex:none;font-size:14px}
+  .tchip .pill{border-radius:20px;min-width:34px;font-size:12px}
+  .mk{font:700 11px/18px -apple-system,Segoe UI,sans-serif;color:#0b1118;border-radius:6px;text-align:center;border:1px solid rgba(0,0,0,.45);box-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .dlabel{font:600 13px/1 -apple-system,Segoe UI,sans-serif;color:#cfe0f0;text-shadow:0 0 4px #000,0 0 8px #000;white-space:nowrap;pointer-events:none}
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--card);color:var(--text)}
+  .leaflet-popup-content{font-size:13px;margin:10px 12px}
+  .leaflet-popup-content a{color:#8cc4ff}
+  details>summary{list-style:none;cursor:pointer}
+  details>summary::-webkit-details-marker{display:none}
+  .caret{color:var(--muted);transition:transform .15s;flex:none}
+  details[open]>summary .caret{transform:rotate(180deg)}
+  .dist{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;scroll-margin-top:10px}
+  .dsum{padding:14px;display:flex;gap:12px;align-items:flex-start}
+  .dsum .pill{font-size:15px;min-width:46px;padding:4px 8px;white-space:nowrap}
+  .dmain{flex:1;min-width:0}
+  .dname{font-weight:600;font-size:17px}
+  .dgen{font-size:14px;margin-top:2px}
+  .dbody{padding:0 14px 8px}
+  .dcond{font-size:12px;color:var(--muted);padding:10px 0;border-top:1px solid var(--line)}
+  .srow{border-top:1px solid var(--line);scroll-margin-top:10px}
+  .srow>summary{display:flex;gap:10px;align-items:center;padding:10px 0}
+  .srow .nm{flex:1;min-width:0}
+  .srow .nm b{font-weight:600}
+  .srow.sleep>summary{opacity:.55}
+  .srow.flash{background:#1c2b3b;border-radius:8px}
+  .sbody{padding:0 0 12px 48px}
+  @media (max-width:600px){.sbody{padding-left:0}}
+  .tags{font-size:12px;color:var(--muted);margin-top:8px}
+  .warn{color:var(--meh)}
+  .bars{display:flex;gap:2px;margin-top:10px;align-items:flex-end;height:34px}
+  .bar{flex:1;border-radius:3px 3px 0 0}
+  .hours{display:flex;gap:2px;font-size:10px;color:var(--muted)}
+  .hours span{flex:1;text-align:center}
+  .hd{margin-top:6px}
+  .hd>summary{font-size:12px;color:#8cc4ff}
+  .tw{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;min-width:480px}
+  td,th{padding:4px 3px;border-bottom:1px solid var(--line);text-align:center}
+  th{color:var(--muted);font-weight:500}
+  .note{color:var(--muted);font-size:12px;margin-top:20px;line-height:1.6}
+  .note>summary{color:#8cc4ff;font-size:13px}
+  .err{background:#3a1c1c;border:1px solid #6b2b2b;padding:12px;border-radius:12px;margin:12px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🌊 Бали серф</h1>
+    <div class="upd"><span id="upd">загружаю…</span><button onclick="load(true)">обновить</button></div>
+  </header>
+  <div class="tabs" id="tabs"></div>
+  <div id="map">карта загружается…</div>
+  <div class="top" id="top"></div>
+  <div id="districts"></div>
+  <details class="note">
+    <summary>Как считается балл</summary>
+    <p>Балл 0–10 — произведение множителей, поэтому один плохой фактор тянет вниз весь балл: <b>размер</b> (у каждого спота свой идеальный диапазон), <b>ветер</b> относительно того, куда смотрит берег, <b>вода</b> (мелким рифам отлив штрафуется вдвое жёстче), <b>период</b> (7 с — рыхлая ветровая волна, 14 с+ — плотный граундсвелл) и <b>сложность спота</b> (считаю для среднего уровня: споты для опытных — с минусом). Балл дня — лучшие 2 часа подряд. У района — диапазон от худшего до лучшего спота.</p>
+    <p><b>Размер</b> на споте — прикидка лица волны по каждому свеллу (основной + вторичный): высота × период × попадание направления в окно спота × открытость спота. <b>Доска</b>: до пояса и на мягких спотах — малибу/лонг, от роста и на быстрых рифах — шорт.</p>
+    <p><b>Почему прогноз «врёт».</b> Морская модель считает сетку ~9 км — на район по сути одна точка, рифы и бары она не видит. Прилив модельный, «отлив/прилив» — относительно размаха за 6 дней. Доверяй тренду больше, чем цифрам; дальше 3 дней — ориентир.</p>
+    <p><b>Сезон.</b> Апрель–октябрь ветер с ВЮВ — оффшор в Чангу и Куте. Ноябрь–март чаще З/СЗ — оффшор на Сануре и востоке, но восток просыпается только на свелле с Ю–ЮЮЗ. Утром почти везде чище. Точки на карте примерные. Данные: Open-Meteo, время — WITA.</p>
+  </details>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+// ===== Районы. sea — точка морской модели (сетка ~9 км: на район одна ячейка).
+const DISTRICTS = [
+  {id:'canggu', name:'Чангу',  sea:[-8.68,115.10], facing:215, label:[-8.632,115.150]},
+  {id:'kuta',   name:'Кута',   sea:[-8.75,115.13], facing:245, label:[-8.712,115.192]},
+  {id:'sanur',  name:'Санур',  sea:[-8.72,115.28], facing:115, label:[-8.700,115.238]},
+  {id:'east',   name:'Восток', sea:[-8.63,115.37], facing:150, label:[-8.588,115.312]},
+];
+
+// ===== Споты.
+// facing — куда смотрит берег; best/spread — лучшее направление свелла и ширина окна (на spread доходит ~50%);
+// exp — открытость; size — лицо волны, м: [начинает работать, идеал от, идеал до, перебор];
+// tide — комфортная вода 0..1 (0 = минимум за 6 дней); shallow — мелкий риф; lvl: 1 новичок … 4 профи;
+// style: soft — мягкая (малибу), hollow — быстрая/полая (шорт), normal.
+const SPOTS = [
+  // --- Чангу
+  {id:'pererenan', d:'canggu', name:'Переренан', p:[-8.6512,115.1213], type:'бичбрейк + риф, лево/право', lvl:2, style:'normal', facing:220, best:220, spread:45, exp:0.85, size:[0.6,1.0,2.0,2.8], tide:[0.25,0.8],
+   tip:'Мощнее и пустее остального Чангу, крупный свелл держит лучше соседей. Сильное течение вдоль берега.'},
+  {id:'echo',      d:'canggu', name:'Эхо Бич', p:[-8.6556,115.1240], type:'риф + бичбрейк, в основном левая', lvl:3, style:'hollow', facing:215, best:220, spread:45, exp:0.9, size:[0.8,1.2,2.4,3.2], tide:[0.35,0.9], shallow:true,
+   tip:'Самая мощная волна Чангу: быстрая левая по рифу. На отливе камни, толпа серьёзная.'},
+  {id:'batubolong',d:'canggu', name:'Бату Болонг', p:[-8.6600,115.1292], type:'песок с камнями', lvl:1, style:'soft', facing:212, best:220, spread:45, exp:0.7, size:[0.4,0.6,1.3,2.0], tide:[0.3,0.85],
+   tip:'Школы и лонгборды, очень людно. Работает почти всегда, на большом свелле — каша.'},
+  {id:'oldmans',   d:'canggu', name:'Олд Мэнс', p:[-8.6614,115.1308], type:'риф с песком, лево/право', lvl:1, style:'soft', facing:212, best:220, spread:45, exp:0.65, size:[0.4,0.7,1.4,2.1], tide:[0.45,1],
+   tip:'Мягкая длинная волна для лонга. На отливе мелко и камни, на большом — закрывается.'},
+  {id:'berawa',    d:'canggu', name:'Берава', p:[-8.6668,115.1386], type:'бичбрейк, пики', lvl:2, style:'normal', facing:208, best:220, spread:45, exp:0.8, size:[0.5,0.9,1.7,2.4], tide:[0.2,0.8],
+   tip:'Песчаные пики, народу меньше, чем на Бату Болонге. Качество сильно зависит от песка.'},
+  // --- Кута
+  {id:'legian',    d:'kuta', name:'Легиан / Дабл Сикс', p:[-8.6982,115.1598], type:'бичбрейк', lvl:1, style:'soft', facing:245, best:225, spread:45, exp:0.75, size:[0.5,0.8,1.6,2.3], tide:[0.15,0.85],
+   tip:'Пики по всему пляжу, обычно чуть больше и злее, чем на Куте.'},
+  {id:'kutabeach', d:'kuta', name:'Кута (Халфвэй)', p:[-8.7135,115.1660], type:'бичбрейк, песок', lvl:1, style:'soft', facing:252, best:225, spread:45, exp:0.7, size:[0.4,0.7,1.5,2.2], tide:[0,1],
+   tip:'Главный учебный пляж. Мягко, песок, любая вода. На большом свелле — шорбрейк и закрытие.'},
+  {id:'kutareef',  d:'kuta', name:'Кута Риф', p:[-8.7330,115.1590], type:'внешний риф, левая, на лодке', lvl:3, style:'normal', facing:235, best:220, spread:40, exp:0.9, size:[0.8,1.2,2.4,3.2], tide:[0.35,0.85], shallow:true,
+   tip:'Длинная левая на внешнем рифе. Только на лодке с пляжа Кута.'},
+  {id:'airportl',  d:'kuta', name:'Эйрпорт Лефтс', p:[-8.7415,115.1530], type:'риф, левая, на лодке', lvl:3, style:'hollow', facing:235, best:215, spread:40, exp:0.85, size:[0.9,1.3,2.5,3.4], tide:[0.35,0.9], shallow:true,
+   tip:'Северная сторона ВПП. Быстрая левая, держит размер лучше Кута Рифа.'},
+  {id:'airportr',  d:'kuta', name:'Эйрпорт Райтс', p:[-8.7585,115.1585], type:'риф, правая, на лодке', lvl:3, style:'hollow', facing:210, best:205, spread:35, exp:0.85, size:[1.0,1.4,2.6,3.6], tide:[0.4,1], shallow:true,
+   tip:'Южная сторона ВПП. Правая, нужен свелл покрупнее; на отливе мелко.'},
+  // --- Санур
+  {id:'sindhur',   d:'sanur', name:'Синду Райт', p:[-8.6800,115.2668], type:'риф, правая', lvl:2, style:'normal', facing:100, best:185, spread:28, exp:0.5, size:[0.6,0.9,1.8,2.5], tide:[0.55,1], shallow:true,
+   tip:'Гребля ~300–400 м через канал. На приливе и маленьком свелле дружелюбная, на отливе — острый мелкий риф.'},
+  {id:'sindhul',   d:'sanur', name:'Синду Лефт (Танджунг Сари)', p:[-8.6852,115.2685], type:'риф, левая', lvl:3, style:'hollow', facing:105, best:190, spread:28, exp:0.55, size:[0.8,1.2,2.2,3.0], tide:[0.5,1], shallow:true,
+   tip:'До роста — короткая и мягкая, крупнее — полая и тяжёлая. Гребля через риф, камни торчат даже в прилив.'},
+  {id:'sanurreef', d:'sanur', name:'Санур Риф (Хаятт)', p:[-8.6965,115.2692], type:'внешний риф, правая, лодка/гребля', lvl:3, style:'hollow', facing:110, best:185, spread:28, exp:0.6, size:[0.9,1.4,2.8,4.0], tide:[0.55,1], shallow:true,
+   tip:'Мощная правая, просыпается только на крупном Ю–ЮЮЗ свелле. Нужна высокая вода.'},
+  {id:'serangan',  d:'sanur', name:'Серанган', p:[-8.7348,115.2478], type:'риф, право/лево', lvl:2, style:'normal', facing:140, best:200, spread:35, exp:0.75, size:[0.6,1.0,2.0,2.8], tide:[0.4,1], shallow:true,
+   tip:'Самый «ловящий» спот этой стороны: работает, когда Санур спит. С берега, очень людно.'},
+  // --- Восток
+  {id:'padanggalak',d:'east', name:'Паданг Галак', p:[-8.6640,115.2668], type:'бичбрейк, лево/право', lvl:2, style:'normal', facing:135, best:195, spread:35, exp:0.65, size:[0.6,0.9,1.8,2.5], tide:[0.2,0.7],
+   tip:'Первый пляж после Санура по байпасу. Песок плавает: сегодня отлично, завтра флэт. На приливе — шорбрейк.'},
+  {id:'gumicik',   d:'east', name:'Гумичик / Лембенг', p:[-8.6440,115.2828], type:'бичбрейки, песчаные банки', lvl:2, style:'normal', facing:140, best:195, spread:35, exp:0.75, size:[0.5,0.9,2.0,2.8], tide:[0.05,0.6],
+   tip:'Длинные лево/право, иногда трубы. На приливе бэквош и тягун. Локалы ревностные — лучше с гидом.'},
+  {id:'ketewel',   d:'east', name:'Кетевел', p:[-8.6315,115.2908], type:'риф у устья реки, длинная правая', lvl:3, style:'hollow', facing:145, best:190, spread:30, exp:0.65, size:[0.8,1.1,2.0,2.8], tide:[0.6,1], shallow:true,
+   tip:'Работает несколько раз за сезон. Чем выше вода, тем безопаснее; на отливе быстро и мелко.'},
+  {id:'purnama',   d:'east', name:'Пурнама', p:[-8.6090,115.3008], type:'бичбрейк, тяжёлые слэбы', lvl:4, style:'hollow', facing:150, best:195, spread:35, exp:0.8, size:[1.3,1.8,3.0,4.0], tide:[0,0.4],
+   tip:'Слэбы и трубы на больших днях, на утреннем отливе. Только для тех, кто реально умеет.'},
+  {id:'keramas',   d:'east', name:'Керамас', p:[-8.6005,115.3335], type:'риф, скоростная правая', lvl:3, style:'hollow', facing:150, best:200, spread:35, exp:0.85, size:[0.8,1.2,2.4,3.3], tide:[0.35,0.75], shallow:true,
+   tip:'Конкурсная правая с трубами. Нужна средняя вода. Ветер обычно поднимается к 9–10 утра. Очень людно.'},
+  {id:'kfc',       d:'east', name:'KFC (у Керамаса)', p:[-8.5978,115.3405], type:'риф, мягкая правая', lvl:2, style:'soft', facing:150, best:200, spread:35, exp:0.6, size:[0.5,0.8,1.5,2.0], tide:[0.6,1],
+   tip:'Самая мягкая правая на этом отрезке, работает на приливе. Вариант, если Керамас тяжеловат.'},
+  {id:'masceti',   d:'east', name:'Масчети', p:[-8.5958,115.3472], type:'риф/песок, лево/право', lvl:1, style:'soft', facing:155, best:200, spread:35, exp:0.6, size:[0.4,0.6,1.3,1.8], tide:[0.45,1],
+   tip:'Не топ по качеству, зато спокойно — тут учатся местные дети.'},
+  {id:'cucukan',   d:'east', name:'Чучукан', p:[-8.5772,115.3722], type:'риф, правая стенка', lvl:2, style:'hollow', facing:165, best:200, spread:35, exp:0.7, size:[0.6,0.9,1.7,2.3], tide:[0.5,1], shallow:true,
+   tip:'Чистая стенка, иногда труба. На отливе внутри очень мелко. Аппер-слэб рядом — только для профи.'},
+  {id:'klotok',    d:'east', name:'Клоток', p:[-8.5650,115.4045], type:'каменистый пойнт, длинная правая', lvl:2, style:'normal', facing:170, best:205, spread:35, exp:0.75, size:[0.7,1.0,2.2,3.2], tide:[0.1,0.6],
+   tip:'Держит и мелкий, и крупный свелл. Окно по ветру узкое — раннее утро.'},
+  {id:'jumpai',    d:'east', name:'Джумпай', p:[-8.5722,115.4185], type:'мягкий бичбрейк по камням', lvl:1, style:'soft', facing:175, best:205, spread:35, exp:0.55, size:[0.3,0.5,1.2,1.7], tide:[0,1],
+   tip:'Единственный спот на востоке для новичков. Выше роста закрывается. Морские ежи.'},
+];
+
+const DAYS = 6, HOUR_FROM = 6, HOUR_TO = 18, LEVEL = 2, COMFORT = 1.9;
+const TZ = '&timezone=Asia%2FMakassar&forecast_days=' + DAYS;
+const LVL_TXT = {1:'для всех',2:'средний+',3:'для опытных',4:'только профи'};
+let DATA = null, selDay = 0, map = null, markers = [];
+const OPEN = new Set(), OPENS = new Set();
+let firstRender = true;
+
+// ===== математика
+const angDiff = (a,b)=>{let d=Math.abs(a-b)%360;return d>180?360-d:d};
+const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
+const lerp = (x,x0,x1,y0,y1)=> y0+(y1-y0)*clamp((x-x0)/(x1-x0),0,1);
+const compass = d=>['С','ССВ','СВ','ВСВ','В','ВЮВ','ЮВ','ЮЮВ','Ю','ЮЮЗ','ЮЗ','ЗЮЗ','З','ЗСЗ','СЗ','ССЗ'][Math.round((((d%360)+360)%360)/22.5)%16];
+const r1 = x=> Math.round(x*10)/10;
+const cap = s=> s? s[0].toUpperCase()+s.slice(1) : s;
+
+function partFace(p,spot){
+  const pf = clamp(0.55+0.07*p.t, 0.9, 1.75);                      // длинный период — волна на мели вырастает сильнее
+  const spr = spot.spread*(0.75+0.025*clamp(p.t,6,18));             // и лучше заворачивает за мысы
+  const df = Math.exp(-0.693*(angDiff(p.d,spot.best)/spr)**2);
+  return p.h*pf*df*spot.exp;
+}
+function sizeScore(f,[mn,lo,hi,mx]){
+  if(f==null) return 0;
+  if(f<mn*0.6) return lerp(f,0,mn*0.6,0,0.5);
+  if(f<mn)     return lerp(f,mn*0.6,mn,0.5,3);
+  if(f<lo)     return lerp(f,mn,lo,3,8.8);
+  if(f<=hi){ const mid=(lo+hi)/2, half=(hi-lo)/2; return 8.8+1.2*(1-Math.abs(f-mid)/half); }
+  if(f<mx)     return lerp(f,hi,mx,8.8,5);
+  return lerp(f,mx,mx*1.35,5,1);
+}
+function windOf(dirFrom,spd,gust,facing){
+  const s = Math.max(spd||0,(gust||0)*0.6);
+  const d = angDiff(dirFrom,(facing+180)%360);
+  const q = Math.cos(Math.max(0,d-25)*Math.PI/155);              // 1 = с суши, 0 = вдоль берега, -1 = с моря
+  let m, kind;
+  if(s<5){ m=1; kind='штиль'; }
+  else {
+    if(q>=0) m = 1-(1-q)*0.45*clamp((s-5)/20,0,1) - clamp((s-30)/40,0,0.3);
+    else     m = 1-(0.45+0.45*(-q))*clamp((s-4)/16,0,1);
+    kind = q>0.6?'оффшор':q>0.15?'кросс-оффшор':q>-0.3?'кросс':q>-0.7?'кросс-оншор':'оншор';
+  }
+  return {m:clamp(m,0.05,1), kind, q, s};
+}
+function tideOf(r,spot){
+  if(r==null) return {f:1};
+  const [lo,hi]=spot.tide;
+  const low=r<lo, high=r>hi, dl=low?lo-r:high?r-hi:0;
+  const k = spot.shallow&&low ? 2.2 : 1.2;
+  return {f:clamp(1-dl*k,0.2,1), low, high, danger: spot.shallow&&low&&dl>0.2};
+}
+function levelOf(face,spot){
+  let f=1;
+  if(face!=null && face>COMFORT) f = clamp(1-(face-COMFORT)/COMFORT*1.3, 0.25, 1);
+  if(spot.lvl>LEVEL) f *= (spot.lvl-LEVEL>=2 ? 0.3 : 0.6);
+  return f;
+}
+function board(spot,face,Tw){
+  if(face==null || face<0.3) return null;
+  if(spot.style==='hollow' || face>=1.4) return {k:'sb', short:'шорт', long: face<0.8?'Короткая быстрая волна — только шорт.':'Шорт.'};
+  if(face<0.8 || (spot.style==='soft' && face<1.3)) return {k:'mal', short:'малибу', long:'Фан-волна — лучше малибу или лонг.'};
+  if(Tw && Tw<9 && face<1.1) return {k:'mid', short:'малибу/мид', long:'Рыхловато — малибу или мидлек.'};
+  return {k:'any', short:'шорт/малибу', long:'Нормально и на шорте, и на малибу.'};
+}
+function sizeWords(f){
+  if(f==null) return '—';
+  if(f<0.3) return 'флэт'; if(f<0.5) return 'по колено'; if(f<0.8) return 'по пояс';
+  if(f<1.1) return 'по грудь'; if(f<1.4) return 'по плечи'; if(f<1.8) return 'в рост';
+  if(f<2.3) return 'выше головы'; if(f<3) return 'полтора роста'; return 'два роста+';
+}
+const color = s=> s>=7.5?'var(--good)':s>=5.5?'var(--ok)':s>=3.5?'var(--meh)':'var(--bad)';
+const colorHex = s=> s>=7.5?'#2fbf71':s>=5.5?'#e0b43a':s>=3.5?'#e07b3a':'#5f6b78';
+const word = s=> s>=7.5?'отлично':s>=5.5?'хорошо':s>=3.5?'средне':s>=2?'слабо':'спит';
+const pill = (s,txt)=>`<span class="pill" style="background:${color(s)}">${txt??s.toFixed(1)}</span>`;
+
+function scoreHour(h,w,spot){
+  const contrib = h.parts.map(p=>({p,f:partFace(p,spot)}));
+  const e2 = contrib.reduce((s,c)=>s+c.f*c.f,0);
+  const face = contrib.length ? Math.sqrt(e2) : null;
+  const Tw = e2>0 ? contrib.reduce((s,c)=>s+c.f*c.f*c.p.t,0)/e2 : null;   // период, который реально доходит до спота
+  const ss = sizeScore(face,spot.size);
+  const wind = windOf(w.d,w.s,w.g,spot.facing);
+  const tide = tideOf(h.r,spot);
+  const lf = levelOf(face,spot);
+  const pq = Tw==null ? 0.8 : 0.72+0.28*clamp((Tw-7)/7,0,1);
+  const cf = h.ww!=null ? 1-clamp((h.ww-0.25)/0.8,0,0.3) : 1;
+  const score = clamp(ss*wind.m*tide.f*lf*pq*cf,0,10);
+  const def = {size:1-ss/10, wind:1-wind.m, tide:1-tide.f, level:1-lf, period:(1-pq)*0.8, chop:1-cf};
+  const defs = Object.entries(def).sort((a,b)=>b[1]-a[1]);
+  return {...h, w, face, Tw, ss, wind, tide, lf, pq, score:r1(score), defs, lim:defs[0][0], limV:defs[0][1]};
+}
+
+// ===== данные
+async function getJSON(u){ let err; for(let i=0;i<3;i++){ try{ const r=await fetch(u); if(!r.ok) throw new Error(r.status+''); return await r.json(); }catch(e){ err=e; } } throw err; }
+const MVARS = 'wave_height,swell_wave_height,swell_wave_period,swell_wave_direction,secondary_swell_wave_height,secondary_swell_wave_period,secondary_swell_wave_direction,wind_wave_height,sea_level_height_msl';
+const hasSwell = m=> m && m.hourly && m.hourly.swell_wave_height && m.hourly.swell_wave_height.some(v=>v!=null);
+const qs = pts=> `latitude=${pts.map(p=>p[0]).join(',')}&longitude=${pts.map(p=>p[1]).join(',')}`;
+
+async function fetchRaw(){
+  let marine = await getJSON(`https://marine-api.open-meteo.com/v1/marine?${qs(DISTRICTS.map(d=>d.sea))}&hourly=${MVARS}${TZ}`);
+  if(!Array.isArray(marine)) marine=[marine];
+  for(let i=0;i<DISTRICTS.length;i++){           // ячейка пустая (берег) — сдвигаемся в море
+    if(hasSwell(marine[i])) continue;
+    for(const [dy,dx] of [[-0.05,0],[-0.08,-0.04],[-0.1,0.04]]){
+      const s=DISTRICTS[i].sea, m=await getJSON(`https://marine-api.open-meteo.com/v1/marine?latitude=${s[0]+dy}&longitude=${s[1]+dx}&hourly=${MVARS}${TZ}`);
+      if(hasSwell(m)){ marine[i]=m; break; }
+    }
+  }
+  let wind = await getJSON(`https://api.open-meteo.com/v1/forecast?${qs(SPOTS.map(s=>s.p))}&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m${TZ}`);
+  if(!Array.isArray(wind)) wind=[wind];
+  return {ts:Date.now(), marine:marine.map(m=>m.hourly), wind:wind.map(w=>w.hourly)};
+}
+
+function prepare(raw){
+  const dist={};
+  DISTRICTS.forEach((d,i)=>{
+    const H=raw.marine[i]; if(!H) return;
+    const tides=(H.sea_level_height_msl||[]).filter(v=>v!=null);
+    const tmin=Math.min(...tides), tmax=Math.max(...tides), ok=tides.length && tmax-tmin>0.1;
+    const hours=H.time.map((t,k)=>{
+      const parts=[];
+      const add=(h,p,dd)=>{ if(h!=null&&p!=null&&dd!=null&&h>0.05) parts.push({h,t:p,d:dd}); };
+      add(H.swell_wave_height?.[k],H.swell_wave_period?.[k],H.swell_wave_direction?.[k]);
+      add(H.secondary_swell_wave_height?.[k],H.secondary_swell_wave_period?.[k],H.secondary_swell_wave_direction?.[k]);
+      const tv=H.sea_level_height_msl?.[k], tn=H.sea_level_height_msl?.[k+1];
+      return {t, date:t.slice(0,10), hour:+t.slice(11,13), parts, ww:H.wind_wave_height?.[k],
+        r: ok&&tv!=null ? (tv-tmin)/(tmax-tmin) : null,
+        trend: ok&&tv!=null&&tn!=null ? (tn-tv>0.03?1:tn-tv<-0.03?-1:0) : 0};
+    });
+    dist[d.id]={hours};
+  });
+  const wind={};
+  SPOTS.forEach((s,i)=>{
+    const W=raw.wind[i]; const idx={};
+    if(W) W.time.forEach((t,k)=>idx[t]={s:W.wind_speed_10m[k],d:W.wind_direction_10m[k],g:W.wind_gusts_10m[k]});
+    wind[s.id]=idx;
+  });
+  const first=dist[DISTRICTS.find(d=>dist[d.id]).id];
+  const dates=[...new Set(first.hours.map(h=>h.date))].slice(0,DAYS);
+  return {ts:raw.ts, dist, wind, dates};
+}
+
+// ===== анализ дня
+function analyzeDay(spot,date){
+  const D=DATA.dist[spot.d]; if(!D) return null;
+  const rows=D.hours.filter(h=>h.date===date&&h.hour>=HOUR_FROM&&h.hour<=HOUR_TO)
+    .map(h=>scoreHour(h, DATA.wind[spot.id][h.t]||{s:0,d:0,g:0}, spot));
+  if(!rows.length) return null;
+  let bi=0, bv=-1;
+  rows.forEach((r,i)=>{ const v=(r.score+(rows[i+1]?rows[i+1].score:r.score))/2; if(v>bv){bv=v;bi=i;} });
+  const pi = rows[bi+1] && rows[bi+1].score>rows[bi].score ? bi+1 : bi;
+  const pk = rows[pi];
+  const thr = Math.max(pk.score-1.5, pk.score*0.8);
+  let s=pi, e=pi;
+  while(s>0 && rows[s-1].score>=thr) s--;
+  while(e<rows.length-1 && rows[e+1].score>=thr) e++;
+  const hs = Math.sqrt(pk.parts.reduce((t,p)=>t+p.h*p.h,0));
+  const need = pk.face>0.05 ? hs*spot.size[1]/pk.face : Infinity;   // сколько свелла в море нужно до «идеала»
+  const when = `${rows[s].hour}:00–${rows[e].hour>=HOUR_TO?'закат':(rows[e].hour+1)+':00'}`;
+  return {rows, best:r1(bv), pk, pi, s, e, hs, need, when, board:board(spot,pk.face,pk.Tw)};
+}
+
+const windShort = w=> w.kind==='штиль' ? 'штиль' : `${w.kind} ${Math.round(w.s)} км/ч`;
+function swellText(parts){
+  if(!parts.length) return 'свелла нет';
+  return parts.map(p=>`${p.h.toFixed(1)} м · ${Math.round(p.t)} с · ${compass(p.d)}`).join(' + ');
+}
+
+// подробный вердикт по споту — из того, что реально ограничивает
+function verdict(spot,a,ctx){
+  const {pk,rows,s,e,best,need,hs,when}=a;
+  const [mn,lo,hi,mx]=spot.size;
+  const sz=sizeWords(pk.face);
+  const isBeach = /бичбрейк|песок/.test(spot.type);
+  const main = pk.parts.slice().sort((x,y)=>partFace(y,spot)-partFace(x,spot))[0];
+  const parts=[], warn=[];
+  let levelSaid=false;
+  if(pk.face==null) return 'Нет данных по свеллу.';
+
+  if(pk.face < mn*0.6){
+    parts.push(pk.face<0.3 ? 'Флэт.' : `Для этого спота считай флэт: ${sz}, а работает он от ~${mn} м.`);
+    if(main && angDiff(main.d,spot.best)>30) parts.push(`Свелл с ${compass(main.d)}, а сюда нужен ${compass(spot.best)}.`);
+    else if(need<6) parts.push(`Нужно от ~${need.toFixed(1)} м свелла в море (сейчас ${hs.toFixed(1)}).`);
+  } else if(pk.face < mn){
+    parts.push(`Маловато (${sz}) — нормально работает примерно от ${need.toFixed(1)} м свелла.`);
+  } else if(pk.face > mx){
+    parts.push(`${cap(sz)} — ${isBeach?'будет закрываться':'мощно, тяжёлые накаты'}.`);
+  } else if(pk.lim==='level' && pk.limV>0.3){
+    levelSaid=true;
+    parts.push(spot.lvl>LEVEL ? `${cap(sz)}, но спот ${LVL_TXT[spot.lvl]}${spot.shallow?' — острый мелкий риф':''}.` : `${cap(sz)} — крупновато, без уверенности лучше спот помягче.`);
+  } else if(pk.lim==='wind' && pk.limV>0.35){
+    parts.push(`Волна есть (${sz}), но даже в лучший час ${windShort(pk.wind)}${pk.wind.q<0?' — дует с моря':' — рябит'}.`);
+  } else if(pk.lim==='tide' && pk.limV>0.35){
+    parts.push(pk.tide.low ? `${cap(sz)}, но воды мало весь день${spot.shallow?' — риф торчит':''}.` : `${cap(sz)}, но вода высоко весь день — волна мягкая.`);
+  } else {
+    parts.push(`${cap(word(best))}: ${sz}, ${windShort(pk.wind)}.`);
+    const WHY = {
+      size: ()=> pk.face<lo ? `мелковато — раскроется от ~${need.toFixed(1)} м свелла` : (isBeach?'размер на верхней границе — местами закрывает':'размер на верхней границе'),
+      wind: ()=> pk.wind.q<0 ? 'ветер с моря портит стенку' : 'боковой ветер подкручивает',
+      tide: ()=> pk.tide.low ? (spot.shallow?'воды маловато, риф близко':'воды маловато') : 'воды многовато, волна мягчит',
+      level: ()=> spot.lvl>LEVEL ? `спот ${LVL_TXT[spot.lvl]}` : 'крупновато',
+      period: ()=> `короткий период (${Math.round(pk.Tw)} с) — волна рыхлая`,
+      chop: ()=> 'рябь поверх свелла',
+    };
+    const top2 = pk.defs.filter(([k,v])=>v>0.2).slice(0,2);
+    if(top2.some(([k])=>k==='level')) levelSaid=true;
+    if(top2.length) parts.push(cap(top2.map(([k])=>WHY[k]()).join('; '))+'.');
+  }
+
+  if(best>=2){
+    let w = `Окно ${when}`;
+    const before = s>0 ? rows[s-1] : null;
+    if(before && before.limV>0.25) w += ({tide:before.tide.low?' (раньше мало воды)':' (раньше много воды)', wind:' (раньше дует)', size:' (раньше мельче)', level:' (раньше крупнее)'}[before.lim]||'');
+    let later=null;
+    for(let j=e+1;j<rows.length;j++){ const wj=rows[j].wind; if(wj.m<0.7 && wj.m<pk.wind.m-0.15){ later=`с ${rows[j].hour}:00 ${windShort(wj)}`; break; } }
+    if(!later && e<rows.length-1){ const nx=rows[e+1]; if(nx.lim==='tide') later = nx.tide.low ? 'потом уходит вода' : 'потом заливает приливом'; }
+    if(later) w += `, ${later}`;
+    const tideMatters = !(spot.tide[0]===0 && spot.tide[1]===1);
+    if(tideMatters && pk.r!=null) w += `. Вода ${pk.r<0.3?'низкая':pk.r<0.7?'средняя':'высокая'}${pk.trend>0?', прибывает':pk.trend<0?', уходит':''}`;
+    parts.push(w+'.');
+    if(a.board) parts.push(a.board.long);
+  }
+  if(pk.tide.danger) warn.push('Отлив над мелким рифом — аккуратно.');
+  if(spot.lvl>LEVEL && !levelSaid) warn.push(`Спот ${LVL_TXT[spot.lvl]}.`);
+  if(ctx.next){
+    const dd=ctx.next.best-best;
+    if(dd>=1.5) parts.push(`Завтра здесь лучше (${ctx.next.best.toFixed(1)}).`);
+    else if(dd<=-1.5 && best>=5) parts.push(`Завтра хуже (${ctx.next.best.toFixed(1)}) — сегодня не пропускай.`);
+  }
+  return parts.join(' ')+(warn.length?` <span class="warn">${warn.join(' ')}</span>`:'');
+}
+
+// короткая строка для списка
+function shortLine(spot,a){
+  const {pk,best,need}=a;
+  if(best<2){
+    if(pk.face!=null && pk.face>spot.size[3]) return 'перебор';
+    if(pk.face!=null && pk.face>=spot.size[0]) return 'слабо — '+({level:`спот ${LVL_TXT[spot.lvl]}`,wind:'ветер',tide:'не та вода',size:'мелковато',period:'рыхлая волна',chop:'рябь'}[pk.lim]||'всего понемногу');
+    return need<6 ? `спит — нужно ~${need.toFixed(1)} м свелла` : 'спит — не то направление свелла';
+  }
+  return [a.when, sizeWords(pk.face), pk.wind.kind==='штиль'?'штиль':pk.wind.kind, a.board&&a.board.short].filter(Boolean).join(' · ');
+}
+
+// общая сводка по району
+function districtGeneral(d,list,date){
+  const awake=list.filter(r=>r.a.best>=2);
+  if(!awake.length){
+    const n=Math.min(...list.map(r=>r.a.need));
+    return `Спит — свелл сюда не доходит${isFinite(n)&&n<6?`, нужно от ~${n.toFixed(1)} м в море`:''}.`;
+  }
+  const top=awake.slice(0,3), faces=top.map(r=>r.a.pk.face);
+  const w1=sizeWords(Math.min(...faces)), w2=sizeWords(Math.max(...faces));
+  const sz = w1===w2 ? w1 : `${w1}–${w2.replace(/^по /,'')}`;
+  // ветер по часам для берега района
+  const D=DATA.dist[d.id], sp=SPOTS.find(s=>s.d===d.id);
+  const ws=D.hours.filter(h=>h.date===date&&h.hour>=HOUR_FROM&&h.hour<=HOUR_TO).map(h=>{const w=DATA.wind[sp.id][h.t]||{}; return {hour:h.hour,...windOf(w.d,w.s,w.g,d.facing)};});
+  const morning=ws.filter(w=>w.hour<=8), mm=morning.reduce((a,b)=>a+b.m,0)/(morning.length||1);
+  const turn=ws.find(w=>w.hour>8 && w.m<0.7);
+  let wind;
+  if(mm>=0.85 && turn) wind=`утром чисто, с ${turn.hour}:00 задувает`;
+  else if(mm>=0.85) wind='ветер ок весь день';
+  else if(morning[0] && morning[0].q<0) wind='ветер с моря уже с утра';
+  else wind='ветер боковой, рябит';
+  const b=top[0];
+  const boards=new Set(top.map(r=>r.a.board&&r.a.board.k).filter(Boolean));
+  const bt = boards.size===1 && boards.has('mal') ? ' Фан — бери малибу.' : boards.size===1 && boards.has('sb') ? ' Под шорт.' : '';
+  if(b.a.best<3.5) return `Слабо: ${sz}, ${wind}. Если очень хочется — ${b.spot.name}, ${b.a.when}.`;
+  return `${cap(sz)}, ${wind}. Лучше всего — ${b.spot.name}, ${b.a.when}.${bt}`;
+}
+
+// ===== рендер
+function fmtDate(d){ const dt=new Date(d+'T12:00:00'); const w=['вс','пн','вт','ср','чт','пт','сб'][dt.getDay()]; return `${w} ${dt.getDate()}.${String(dt.getMonth()+1).padStart(2,'0')}`; }
+
+function render(){
+  if(!DATA) return;
+  const date=DATA.dates[selDay], nextDate=DATA.dates[selDay+1];
+  document.getElementById('tabs').innerHTML=DATA.dates.map((d,i)=>`<button class="tab ${i===selDay?'on':''}" onclick="selDay=${i};render()">${i===0?'Сегодня':i===1?'Завтра':fmtDate(d)}</button>`).join('');
+  const res=SPOTS.map(spot=>({spot,a:analyzeDay(spot,date),n:nextDate?analyzeDay(spot,nextDate):null})).filter(r=>r.a);
+  const ranked=[...res].sort((x,y)=>y.a.best-x.a.best);
+
+  document.getElementById('top').innerHTML = '<span class="muted">Лучшее:</span>' +
+    ranked.slice(0,3).map(r=>`<span class="tchip" onclick="openSpot('${r.spot.id}')">${pill(r.a.best)}${r.spot.name}</span>`).join('');
+
+  if(firstRender){ const bd=DISTRICTS.map(d=>({d,b:ranked.find(r=>r.spot.d===d.id)})).filter(x=>x.b).sort((x,y)=>y.b.a.best-x.b.a.best)[0]; if(bd) OPEN.add(bd.d.id); firstRender=false; }
+
+  document.getElementById('districts').innerHTML=DISTRICTS.map(d=>{
+    const list=ranked.filter(r=>r.spot.d===d.id); if(!list.length) return '';
+    const hiS=list[0].a.best, loS=list[list.length-1].a.best;   // list отсортирован по баллу
+    const range = hiS-loS<0.3
+      ? pill(hiS)
+      : `<span class="pill" style="background:linear-gradient(90deg,${colorHex(loS)},${colorHex(hiS)})">${loS.toFixed(1)}–${hiS.toFixed(1)}</span>`;
+    const nAwake=list.filter(r=>r.a.best>=2).length;
+    const D=DATA.dist[d.id], h8=D.hours.find(x=>x.date===date&&x.hour===8);
+    const rowsHtml=list.map(({spot,a,n})=>{
+      const bars=a.rows.map((r,i)=>`<div class="bar" title="${r.hour}:00 — ${r.score.toFixed(1)}" style="height:${Math.max(4,r.score*10)}%;background:${color(r.score)};opacity:${i>=a.s&&i<=a.e?1:0.5}"></div>`).join('');
+      const hrs=a.rows.map(r=>`<span>${r.hour%3===0?r.hour:''}</span>`).join('');
+      const tbl=a.rows.map(r=>`<tr><td>${r.hour}:00</td><td><b style="color:${color(r.score)}">${r.score.toFixed(1)}</b></td><td>${r.face!=null?r.face.toFixed(1)+' м · ':''}${sizeWords(r.face)}</td><td>${r.Tw?Math.round(r.Tw)+' с':'–'}</td><td>${Math.round(r.w.s||0)} ${compass(r.w.d||0)} · ${r.wind.kind}</td><td>${r.r!=null?(r.r<0.3?'низкая':r.r<0.7?'средняя':'высокая')+(r.trend>0?' ↑':r.trend<0?' ↓':''):'–'}</td></tr>`).join('');
+      return `<details class="srow ${a.best<2?'sleep':''}" id="s-${spot.id}" ${OPENS.has(spot.id)?'open':''}>
+        <summary onclick="tg(OPENS,'${spot.id}',this)">${pill(a.best)}<div class="nm"><b>${spot.name}</b><div class="sm muted">${shortLine(spot,a)}</div></div><span class="caret">▾</span></summary>
+        <div class="sbody">
+          <div>${verdict(spot,a,{next:n})}</div>
+          <div class="bars">${bars}</div><div class="hours">${hrs}</div>
+          <div class="tags">${spot.type} · ${LVL_TXT[spot.lvl]} · идеал ${spot.size[1]}–${spot.size[2]} м. ${spot.tip}</div>
+          <details class="hd"><summary>по часам</summary><div class="tw"><table><tr><th>час</th><th>балл</th><th>размер</th><th>период</th><th>ветер км/ч</th><th>вода</th></tr>${tbl}</table></div></details>
+        </div></details>`;
+    }).join('');
+    return `<details class="dist" id="d-${d.id}" ${OPEN.has(d.id)?'open':''}>
+      <summary class="dsum" onclick="tg(OPEN,'${d.id}',this);fitDistrict('${d.id}',this)">${range}
+        <div class="dmain"><div class="dname">${d.name} <span class="sm muted">· работают ${nAwake} из ${list.length}</span></div>
+        <div class="dgen">${districtGeneral(d,list,date)}</div></div><span class="caret">▾</span></summary>
+      <div class="dbody"><div class="dcond">Свелл утром: ${h8?swellText(h8.parts):'–'}</div>${rowsHtml}</div></details>`;
+  }).join('');
+
+  drawMap(res);
+}
+// summary кликается до переключения: details ещё в старом состоянии
+function tg(set,id,el){ const det=el.parentElement; if(det.open) set.delete(id); else set.add(id); }
+function fitDistrict(id,el){ if(!map || el.parentElement.open) return; map.fitBounds(SPOTS.filter(s=>s.d===id).map(s=>s.p),{padding:[40,40],maxZoom:14}); }
+
+function initMap(){
+  if(map) return true;
+  if(!window.L){ document.getElementById('map').textContent='карта не загрузилась (нет доступа к cdnjs)'; return false; }
+  const el=document.getElementById('map'); el.textContent=''; el.style.display='block';
+  map=L.map('map',{scrollWheelZoom:false,zoomSnap:0.25});
+  map.fitBounds([[-8.77,115.10],[-8.55,115.43]]);
+  // Esri отдаёт тайлы без Referer — работает и при открытии файла локально
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,attribution:'Tiles © Esri'}).addTo(map);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',{maxZoom:16,opacity:0.7}).addTo(map);
+  DISTRICTS.forEach(d=>L.marker(d.label,{interactive:false,icon:L.divIcon({className:'dlabel',html:d.name,iconSize:null})}).addTo(map));
+  return true;
+}
+function drawMap(res){
+  if(!initMap()) return;
+  markers.forEach(m=>m.remove());
+  markers=res.map(({spot,a})=>L.marker(spot.p,{zIndexOffset:Math.round(a.best*100),icon:L.divIcon({className:'',html:`<div class="mk" style="background:${colorHex(a.best)}">${a.best.toFixed(1)}</div>`,iconSize:[30,20],iconAnchor:[15,10]})})
+    .bindTooltip(spot.name,{direction:'top',offset:[0,-10]})
+    .bindPopup(`<b>${spot.name}</b> — ${a.best.toFixed(1)}, ${word(a.best)}<br>${shortLine(spot,a)}<br><a href="#" onclick="openSpot('${spot.id}');return false">подробнее ↓</a>`)
+    .addTo(map));
+}
+function openSpot(id){
+  const sp=SPOTS.find(s=>s.id===id); if(!sp) return;
+  OPEN.add(sp.d); OPENS.add(id);
+  const dd=document.getElementById('d-'+sp.d), el=document.getElementById('s-'+id);
+  if(dd) dd.open=true; if(!el) return; el.open=true;
+  el.scrollIntoView({behavior:'smooth',block:'start'});
+  el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1500);
+}
+
+async function load(force){
+  let cached=null;
+  try{ cached=JSON.parse(localStorage.getItem('bs_raw')||'null'); }catch(e){}
+  if(!force && cached && Date.now()-cached.ts<60*60*1000){ DATA=prepare(cached); showUpd(); render(); return; }
+  document.getElementById('upd').textContent='загружаю…';
+  try{
+    const raw=await fetchRaw();
+    try{ localStorage.setItem('bs_raw',JSON.stringify(raw)); }catch(e){}
+    DATA=prepare(raw); selDay=Math.min(selDay,DATA.dates.length-1); showUpd(); render();
+  }catch(e){
+    if(cached){ DATA=prepare(cached); showUpd(true); render(); return; }
+    document.getElementById('upd').textContent='ошибка';
+    document.getElementById('districts').innerHTML=`<div class="err">Не получилось загрузить прогноз: ${e.message}<br>Проверь интернет и нажми «обновить».</div>`;
+  }
+}
+function showUpd(stale){
+  const d=new Date(DATA.ts);
+  document.getElementById('upd').innerHTML=`${stale?'<span class="warn">нет сети, прогноз от</span>':'обновлено'} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+load();
+</script>
+</body>
+</html>
